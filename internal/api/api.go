@@ -22,6 +22,7 @@ import (
 
 type Server struct {
 	courseStore *store.CourseStore
+	userStore   *store.UserStore
 	logger      *logrus.Logger
 	db          *gorm.DB
 	authClient  *auth.Client
@@ -34,6 +35,7 @@ func NewServer() *Server {
 		logger.Fatalf("failed to connect to database: %v", err)
 	}
 	courseStore := store.NewCourseStore(db, logger)
+	userStore := store.NewUserStore(db, logger)
 
 	// Initialize Firebase SDK
 	opt := option.WithCredentialsFile("key.json")
@@ -48,6 +50,7 @@ func NewServer() *Server {
 
 	return &Server{
 		courseStore: courseStore,
+		userStore:   userStore,
 		logger:      logger,
 		db:          db,
 		authClient:  authClient,
@@ -61,7 +64,7 @@ func (s *Server) Run() {
 
 	api := r.PathPrefix("/api/v1").Subrouter()
 	api.Use(s.authMiddleware)
-	api.HandleFunc("/courses", s.getCourses).Methods("GET")
+	api.Handle("/courses", RBACMiddleware(s.db, schema.Student, schema.Educator, schema.Admin)(http.HandlerFunc(s.getCourses))).Methods("GET")
 	api.HandleFunc("/courses", s.createCourse).Methods("POST")
 
 	r.Use(rateLimitMiddleware)

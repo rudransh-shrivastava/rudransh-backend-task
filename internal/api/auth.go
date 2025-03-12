@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"firebase.google.com/go/auth"
+	"github.com/rudransh-shrivastava/rudransh-backend-task/internal/schema"
 )
 
 // Handler to register new users
@@ -29,7 +30,18 @@ func (s *Server) registerUser(w http.ResponseWriter, r *http.Request) {
 
 	s.logger.Infof("Registered a new user %+v", userRecord.UserInfo)
 
-	// TODO: Create the user in the db
+	dbUser := &schema.User{
+		UID:   userRecord.UserInfo.UID,
+		Email: userRecord.UserInfo.Email,
+		Name:  userRecord.UserInfo.DisplayName,
+		Role:  schema.Student,
+	}
+	err = s.userStore.CreateUser(dbUser)
+	if err != nil {
+		http.Error(w, "Error creating user: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
 	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(userRecord)
 }

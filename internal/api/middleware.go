@@ -3,13 +3,16 @@ package api
 import (
 	"context"
 	"net/http"
+	"slices"
 	"strings"
 	"time"
 
 	"github.com/gorilla/mux"
+	"github.com/rudransh-shrivastava/rudransh-backend-task/internal/schema"
 	"github.com/ulule/limiter/v3"
 	"github.com/ulule/limiter/v3/drivers/middleware/stdlib"
 	"github.com/ulule/limiter/v3/drivers/store/memory"
+	"gorm.io/gorm"
 )
 
 func (s *Server) authMiddleware(next http.Handler) http.Handler {
@@ -53,4 +56,35 @@ func (s *Server) newRateLimitMiddleware() mux.MiddlewareFunc {
 	middleware := stdlib.NewMiddleware(rateLimiter)
 
 	return middleware.Handler
+}
+
+// RBACMiddleware returns a middleware that only allows users with one of the allowed roles.
+func RBACMiddleware(db *gorm.DB, allowedRoles ...schema.Role) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			// Assume that your authentication middleware has already set the UID in context.
+			uid, ok := r.Context().Value("userID").(string)
+			if !ok || uid == "" {
+				http.Error(w, "Unauthorized: missing user ID", http.StatusUnauthorized)
+				return
+			}
+
+			// Look up the user in your database using the UID.
+			var user schema.User
+			if err := db.Where("uid = ?", uid).First(&user).Error; err != nil {
+				http.Error(w, "User not found", http.StatusUnauthorized)
+				return
+			}
+
+			// Check if the user's role is allowed.
+			allowed := slices.Contains(allowedRoles, user.Role)
+			if !allowed {
+				http.Error(w, "Forbidden: insufficient permissions", http.StatusForbidden)
+				return
+			}
+
+			// Proceed with the request.
+			next.ServeHTTP(w, r)
+		})
+	}
 }
