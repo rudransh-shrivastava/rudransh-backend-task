@@ -12,6 +12,7 @@ const (
 
 type User struct {
 	ID        string    `gorm:"primaryKey"`
+	UID       string    `gorm:"uniqueIndex"`
 	Email     string    `gorm:"uniqueIndex;not null" json:"email"`
 	Name      string    `gorm:"not null" json:"name"`
 	Role      Role      `gorm:"not null" json:"role"`

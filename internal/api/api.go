@@ -1,23 +1,30 @@
 package api
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
+	"strconv"
 	"time"
 
+	firebase "firebase.google.com/go"
+	"firebase.google.com/go/auth"
 	"github.com/gorilla/mux"
 	"github.com/rudransh-shrivastava/rudransh-backend-task/internal/db"
-	"github.com/rudransh-shrivastava/rudransh-backend-task/internal/middleware"
 	"github.com/rudransh-shrivastava/rudransh-backend-task/internal/schema"
 	"github.com/rudransh-shrivastava/rudransh-backend-task/internal/store"
 	"github.com/rudransh-shrivastava/rudransh-backend-task/internal/utils"
 	"github.com/rudransh-shrivastava/rudransh-backend-task/internal/utils/logger"
 	"github.com/sirupsen/logrus"
+	"google.golang.org/api/option"
+	"gorm.io/gorm"
 )
 
 type Server struct {
 	courseStore *store.CourseStore
 	logger      *logrus.Logger
+	db          *gorm.DB
+	authClient  *auth.Client
 }
 
 func NewServer() *Server {
@@ -27,21 +34,35 @@ func NewServer() *Server {
 		logger.Fatalf("failed to connect to database: %v", err)
 	}
 	courseStore := store.NewCourseStore(db, logger)
+
+	// Initialize Firebase SDK
+	opt := option.WithCredentialsFile("key.json")
+	fbApp, err := firebase.NewApp(context.Background(), nil, opt)
+	if err != nil {
+		logger.Fatalf("error initializing firebase app: %v", err)
+	}
+	authClient, err := fbApp.Auth(context.Background())
+	if err != nil {
+		logger.Fatalf("error initializing firebase auth: %v", err)
+	}
+
 	return &Server{
 		courseStore: courseStore,
 		logger:      logger,
+		db:          db,
+		authClient:  authClient,
 	}
 }
 
 func (s *Server) Run() {
 	r := mux.NewRouter()
+	rateLimitMiddleware := s.newRateLimitMiddleware()
+	r.HandleFunc("/api/v1/register", s.registerUser).Methods("POST")
 
-	rateLimitMiddleware := middleware.NewRateLimitMiddleware()
-	// TODO: implement auth
-	r.HandleFunc("/api/v1/courses", s.getCourses).Methods("GET")
-	r.HandleFunc("/api/v1/courses", s.createCourse).Methods("POST")
-	// r.HandleFunc("/api/v1/courses", s.updateCourse).Methods("UPDATE")
-	// r.HandleFunc("/api/v1/courses", s.deleteCourse).Methods("DELETE")
+	api := r.PathPrefix("/api/v1").Subrouter()
+	api.Use(s.authMiddleware)
+	api.HandleFunc("/courses", s.getCourses).Methods("GET")
+	api.HandleFunc("/courses", s.createCourse).Methods("POST")
 
 	r.Use(rateLimitMiddleware)
 
@@ -57,19 +78,35 @@ func (s *Server) Run() {
 
 func (s *Server) getCourses(w http.ResponseWriter, r *http.Request) {
 	s.logger.Info("/GET /api/v1/courses")
-	// TODO: get the limit and offset from serach query parameters
-	limit := 10
-	offset := 0
 
+	limitQuery := r.URL.Query().Get("limit")
+	offsetQuery := r.URL.Query().Get("offset")
+	if limitQuery == "" {
+		limitQuery = "10"
+	}
+	if offsetQuery == "" {
+		offsetQuery = "0"
+	}
+
+	limit, err := strconv.Atoi(limitQuery)
+	if err != nil {
+		utils.WriteErrorResponse(w, "Invalid limit, limit must be a number", http.StatusBadRequest)
+		return
+	}
+	offset, err := strconv.Atoi(offsetQuery)
+	if err != nil {
+		utils.WriteErrorResponse(w, "Invalid offset, offset must be a number", http.StatusBadRequest)
+		return
+	}
 	courses, err := s.courseStore.ListCourses(limit, offset)
 	if err != nil {
-		s.logger.Error("Failed to list courses", err)
-		w.WriteHeader(http.StatusInternalServerError)
+		utils.WriteErrorResponse(w, "Internal server error", http.StatusInternalServerError)
 		return
 	}
 	utils.WriteJSONResponse(w, courses)
 }
 
+// TODO: handle bad input
 func (s *Server) createCourse(w http.ResponseWriter, r *http.Request) {
 	if r.Header.Get("Content-Type") != "application/json" {
 		utils.WriteErrorResponse(w, "Invalid Content-Type", http.StatusBadRequest)
@@ -84,6 +121,7 @@ func (s *Server) createCourse(w http.ResponseWriter, r *http.Request) {
 
 	err := json.NewDecoder(r.Body).Decode(&course)
 	if err != nil {
+
 		utils.WriteErrorResponse(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}

@@ -6,3 +6,6 @@ bin/
 
 # SQLite database file
 db.sqlite3
+
+# Firebase keys
+key.json
