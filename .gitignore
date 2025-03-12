@@ -1,0 +1,5 @@
+# Compiled Binaries
+bin/
+
+# Environment variables
+.env
