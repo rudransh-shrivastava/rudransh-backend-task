@@ -10,6 +10,7 @@ import (
 )
 
 // Handler to register new users
+// TODO: Ask for role while registering
 func (s *Server) registerUser(w http.ResponseWriter, r *http.Request) {
 	var req struct {
 		Email    string `json:"email"`

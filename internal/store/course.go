@@ -38,3 +38,31 @@ func (s *CourseStore) ListCourses(limit, offset int) ([]schema.Course, error) {
 
 	return courses, nil
 }
+
+func (s *CourseStore) GetCourseById(id uint) (schema.Course, error) {
+	var course schema.Course
+
+	if err := s.db.Where("id = ?", id).First(&course).Error; err != nil {
+		s.logger.Error("Failed to get course", err)
+		return course, errors.New("failed to get course")
+	}
+
+	return course, nil
+}
+
+func (s *CourseStore) UpdateCourse(course *schema.Course) error {
+	if err := s.db.Save(course).Error; err != nil {
+		s.logger.Error("Failed to update course", err)
+		return errors.New("failed to update course")
+	}
+	return nil
+}
+
+// TODO: shouldnt allow to delete someone else course
+func (s *CourseStore) DeleteCourse(course *schema.Course) error {
+	if err := s.db.Delete(course).Error; err != nil {
+		s.logger.Error("Failed to delete course", err)
+		return errors.New("failed to delete course")
+	}
+	return nil
+}

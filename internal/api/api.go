@@ -59,14 +59,17 @@ func NewServer() *Server {
 
 func (s *Server) Run() {
 	r := mux.NewRouter()
-	rateLimitMiddleware := s.newRateLimitMiddleware()
 	r.HandleFunc("/api/v1/register", s.registerUser).Methods("POST")
 
 	api := r.PathPrefix("/api/v1").Subrouter()
 	api.Use(s.authMiddleware)
-	api.Handle("/courses", RBACMiddleware(s.db, schema.Student, schema.Educator, schema.Admin)(http.HandlerFunc(s.getCourses))).Methods("GET")
-	api.HandleFunc("/courses", s.createCourse).Methods("POST")
 
+	api.Handle("/courses", RBACMiddleware(s.db, schema.Student, schema.Educator, schema.Admin)(http.HandlerFunc(s.getCourses))).Methods("GET")
+	api.Handle("/courses", RBACMiddleware(s.db, schema.Educator, schema.Admin)(http.HandlerFunc(s.createCourse))).Methods("POST")
+	api.Handle("/courses", RBACMiddleware(s.db, schema.Educator, schema.Admin)(http.HandlerFunc(s.updateCourse))).Methods("UPDATE") // TODO: fix
+	api.Handle("/courses", RBACMiddleware(s.db, schema.Educator, schema.Admin)(http.HandlerFunc(s.deleteCourse))).Methods("DELETE") // TODO: fix
+
+	rateLimitMiddleware := s.newRateLimitMiddleware()
 	r.Use(rateLimitMiddleware)
 
 	s.logger.Info("Server is running on port 8080")
@@ -131,6 +134,84 @@ func (s *Server) createCourse(w http.ResponseWriter, r *http.Request) {
 	if err := s.courseStore.CreateCourse(&course); err != nil {
 		s.logger.Error("Failed to create course", err)
 		utils.WriteErrorResponse(w, "failed to create course", http.StatusInternalServerError)
+		return
+	}
+
+	utils.WriteJSONResponse(w, course)
+}
+
+func (s *Server) updateCourse(w http.ResponseWriter, r *http.Request) {
+	if r.Header.Get("Content-Type") != "application/json" {
+		utils.WriteErrorResponse(w, "Invalid Content-Type", http.StatusBadRequest)
+		return
+	}
+	if r.Body == nil {
+		utils.WriteErrorResponse(w, "Request body is empty", http.StatusBadRequest)
+		return
+	}
+
+	var course schema.Course
+
+	err := json.NewDecoder(r.Body).Decode(&course)
+	if err != nil {
+		utils.WriteErrorResponse(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+	if course.ID == 0 {
+		utils.WriteErrorResponse(w, "id is required", http.StatusBadRequest)
+		return
+	}
+	if course.Title == "" {
+		utils.WriteErrorResponse(w, "title is required", http.StatusBadRequest)
+		return
+	}
+
+	_, err = s.courseStore.GetCourseById(course.ID)
+	if err != nil {
+		utils.WriteErrorResponse(w, "course not found", http.StatusNotFound)
+		return
+	}
+
+	if err := s.courseStore.UpdateCourse(&course); err != nil {
+		s.logger.Error("Failed to update course", err)
+		utils.WriteErrorResponse(w, "failed to update course", http.StatusInternalServerError)
+		return
+	}
+
+	utils.WriteJSONResponse(w, course)
+}
+
+func (s *Server) deleteCourse(w http.ResponseWriter, r *http.Request) {
+	if r.Header.Get("Content-Type") != "application/json" {
+		utils.WriteErrorResponse(w, "Invalid Content-Type", http.StatusBadRequest)
+		return
+	}
+	if r.Body == nil {
+		utils.WriteErrorResponse(w, "Request body is empty", http.StatusBadRequest)
+		return
+	}
+
+	var course schema.Course
+
+	err := json.NewDecoder(r.Body).Decode(&course)
+	if err != nil {
+		utils.WriteErrorResponse(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+	if course.ID == 0 {
+		utils.WriteErrorResponse(w, "id is required", http.StatusBadRequest)
+		return
+	}
+
+	_, err = s.courseStore.GetCourseById(course.ID)
+	if err != nil {
+		utils.WriteErrorResponse(w, "course not found", http.StatusNotFound)
+		return
+	}
+
+	if err := s.courseStore.DeleteCourse(&course); err != nil {
+		s.logger.Error("Failed to delete course", err)
+		utils.WriteErrorResponse(w, "failed to delete course", http.StatusInternalServerError)
 		return
 	}
 
