@@ -1,6 +1,7 @@
 package store
 
 import (
+	"context"
 	"errors"
 
 	"github.com/rudransh-shrivastava/rudransh-backend-task/internal/schema"
@@ -36,5 +37,14 @@ func (s *UserStore) GetUserByUID(uid string) (schema.User, error) {
 		return user, errors.New("failed to get user")
 	}
 
+	return user, nil
+}
+
+func (s *UserStore) GetUserFromContext(ctx context.Context) (schema.User, error) {
+	uid := ctx.Value("userID").(string)
+	user, err := s.GetUserByUID(uid)
+	if err != nil {
+		return user, err
+	}
 	return user, nil
 }

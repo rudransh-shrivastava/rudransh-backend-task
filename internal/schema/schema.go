@@ -1,6 +1,8 @@
 package schema
 
-import "time"
+import (
+	"time"
+)
 
 type Role string
 
@@ -25,4 +27,20 @@ type Course struct {
 	User      User      `json:"user" gorm:"foreignKey:UserID"`
 	UserID    uint      `json:"user_id"`
 	CreatedAt time.Time `json:"created_at"`
+}
+
+type Quiz struct {
+	ID        uint      `json:"id" gorm:"primaryKey"`
+	Questions string    `json:"questions"` // JSON encoded questions
+	Course    Course    `json:"course" gorm:"foreignKey:CourseID"`
+	CourseID  uint      `json:"course_id"`
+	CreatedAt time.Time `json:"created_at"`
+}
+
+type QuizzesTaken struct {
+	ID     uint `json:"id" gorm:"primaryKey"`
+	User   User `json:"user" gorm:"foreignKey:UserID"`
+	UserID uint `json:"user_id"`
+	Quiz   Quiz `json:"quiz" gorm:"foreignKey:QuizID"`
+	QuizID uint `json:"quiz_id"`
 }

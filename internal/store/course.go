@@ -58,7 +58,7 @@ func (s *CourseStore) UpdateCourse(course *schema.Course) error {
 	return nil
 }
 
-// TODO: shouldnt allow to delete someone else course
+// shouldnt allow to delete someone else course
 func (s *CourseStore) DeleteCourse(course *schema.Course) error {
 	if err := s.db.Delete(course).Error; err != nil {
 		s.logger.Error("Failed to delete course", err)

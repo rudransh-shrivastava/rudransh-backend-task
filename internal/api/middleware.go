@@ -40,7 +40,6 @@ func (s *Server) authMiddleware(next http.Handler) http.Handler {
 			return
 		}
 
-		// You can attach token claims or user info to the context if needed
 		ctx := context.WithValue(r.Context(), "userID", token.UID)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
@@ -62,14 +61,12 @@ func (s *Server) newRateLimitMiddleware() mux.MiddlewareFunc {
 func RBACMiddleware(db *gorm.DB, allowedRoles ...schema.Role) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			// Assume that your authentication middleware has already set the UID in context.
 			uid, ok := r.Context().Value("userID").(string)
 			if !ok || uid == "" {
 				http.Error(w, "Unauthorized: missing user ID", http.StatusUnauthorized)
 				return
 			}
 
-			// Look up the user in your database using the UID.
 			var user schema.User
 			if err := db.Where("uid = ?", uid).First(&user).Error; err != nil {
 				http.Error(w, "User not found", http.StatusUnauthorized)
@@ -83,8 +80,22 @@ func RBACMiddleware(db *gorm.DB, allowedRoles ...schema.Role) func(http.Handler)
 				return
 			}
 
-			// Proceed with the request.
 			next.ServeHTTP(w, r)
 		})
 	}
+}
+
+func corsMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+		w.Header().Set("Access-Control-Allow-Headers", "*")
+
+		if r.Method == "OPTIONS" {
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+
+		next.ServeHTTP(w, r)
+	})
 }
