@@ -69,7 +69,6 @@ func (s *Server) Run() {
 	api.Handle("/courses", RBACMiddleware(s.db, schema.Student, schema.Educator, schema.Admin)(http.HandlerFunc(s.getCourses))).Methods("GET")
 	api.Handle("/courses/quiz", RBACMiddleware(s.db, schema.Educator, schema.Admin)(http.HandlerFunc(s.getQuiz))).Methods("GET")
 	api.Handle("/courses", RBACMiddleware(s.db, schema.Educator, schema.Admin)(http.HandlerFunc(s.createCourse))).Methods("POST")
-	api.Handle("/courses", RBACMiddleware(s.db, schema.Educator, schema.Admin)(http.HandlerFunc(s.updateCourse))).Methods("UPDATE")     // TODO: fix
 	api.Handle("/courses", RBACMiddleware(s.db, schema.Educator, schema.Admin)(http.HandlerFunc(s.deleteCourse))).Methods("DELETE")     // TODO: fix
 	api.Handle("/quiz/generate", RBACMiddleware(s.db, schema.Educator, schema.Admin)(http.HandlerFunc(s.generateQuiz))).Methods("POST") // TODO: educators can make quizzes for their courses ONLY
 

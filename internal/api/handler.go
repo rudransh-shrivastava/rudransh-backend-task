@@ -79,47 +79,6 @@ func (s *Server) createCourse(w http.ResponseWriter, r *http.Request) {
 	utils.WriteJSONResponse(w, course)
 }
 
-func (s *Server) updateCourse(w http.ResponseWriter, r *http.Request) {
-	if r.Header.Get("Content-Type") != "application/json" {
-		utils.WriteErrorResponse(w, "Invalid Content-Type", http.StatusBadRequest)
-		return
-	}
-	if r.Body == nil {
-		utils.WriteErrorResponse(w, "Request body is empty", http.StatusBadRequest)
-		return
-	}
-
-	var course schema.Course
-
-	err := json.NewDecoder(r.Body).Decode(&course)
-	if err != nil {
-		utils.WriteErrorResponse(w, "Invalid request body", http.StatusBadRequest)
-		return
-	}
-	if course.ID == 0 {
-		utils.WriteErrorResponse(w, "id is required", http.StatusBadRequest)
-		return
-	}
-	if course.Title == "" {
-		utils.WriteErrorResponse(w, "title is required", http.StatusBadRequest)
-		return
-	}
-
-	_, err = s.courseStore.GetCourseById(course.ID)
-	if err != nil {
-		utils.WriteErrorResponse(w, "course not found", http.StatusNotFound)
-		return
-	}
-
-	if err := s.courseStore.UpdateCourse(&course); err != nil {
-		s.logger.Error("Failed to update course", err)
-		utils.WriteErrorResponse(w, "failed to update course", http.StatusInternalServerError)
-		return
-	}
-
-	utils.WriteJSONResponse(w, course)
-}
-
 func (s *Server) deleteCourse(w http.ResponseWriter, r *http.Request) {
 	if r.Header.Get("Content-Type") != "application/json" {
 		utils.WriteErrorResponse(w, "Invalid Content-Type", http.StatusBadRequest)
