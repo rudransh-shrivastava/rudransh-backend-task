@@ -3,3 +3,6 @@ bin/
 
 # Environment variables
 .env
+
+# SQLite database file
+db.sqlite3

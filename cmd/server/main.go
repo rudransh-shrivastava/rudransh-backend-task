@@ -1,10 +1,8 @@
 package main
 
-import (
-	"github.com/rudransh-shrivastava/rudransh-backend-task/internal/server"
-)
+import "github.com/rudransh-shrivastava/rudransh-backend-task/internal/api"
 
 func main() {
-	server := server.NewServer()
+	server := api.NewServer()
 	server.Run()
 }
