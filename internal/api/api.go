@@ -127,10 +127,23 @@ func (s *Server) createCourse(w http.ResponseWriter, r *http.Request) {
 
 	err := json.NewDecoder(r.Body).Decode(&course)
 	if err != nil {
-
 		utils.WriteErrorResponse(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
+	if course.Title == "" {
+		utils.WriteErrorResponse(w, "title is required", http.StatusBadRequest)
+		return
+	}
+
+	// Look up the user in your database using the UID.
+	uid, _ := r.Context().Value("userID").(string)
+	user, err := s.userStore.GetUserByUID(uid)
+	if err != nil {
+		http.Error(w, "User not found", http.StatusUnauthorized)
+		return
+	}
+	course.User = user
+
 	if err := s.courseStore.CreateCourse(&course); err != nil {
 		s.logger.Error("Failed to create course", err)
 		utils.WriteErrorResponse(w, "failed to create course", http.StatusInternalServerError)

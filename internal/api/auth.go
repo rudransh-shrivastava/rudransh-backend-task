@@ -15,10 +15,19 @@ func (s *Server) registerUser(w http.ResponseWriter, r *http.Request) {
 	var req struct {
 		Email    string `json:"email"`
 		Password string `json:"password"`
+		Role     string `json:"role"`
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "Invalid request", http.StatusBadRequest)
+		return
+	}
+	if req.Email == "" || req.Password == "" {
+		http.Error(w, "Email and password are required", http.StatusBadRequest)
+		return
+	}
+	if schema.Role(req.Role) != schema.Student && schema.Role(req.Role) != schema.Educator {
+		http.Error(w, "Invalid role", http.StatusBadRequest)
 		return
 	}
 
@@ -35,7 +44,7 @@ func (s *Server) registerUser(w http.ResponseWriter, r *http.Request) {
 		UID:   userRecord.UserInfo.UID,
 		Email: userRecord.UserInfo.Email,
 		Name:  userRecord.UserInfo.DisplayName,
-		Role:  schema.Student,
+		Role:  schema.Role(req.Role),
 	}
 	err = s.userStore.CreateUser(dbUser)
 	if err != nil {

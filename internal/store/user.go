@@ -27,3 +27,14 @@ func (us *UserStore) CreateUser(user *schema.User) error {
 	}
 	return nil
 }
+
+func (s *UserStore) GetUserByUID(uid string) (schema.User, error) {
+	var user schema.User
+
+	if err := s.db.Where("uid = ?", uid).First(&user).Error; err != nil {
+		s.logger.Error("Failed to get user", err)
+		return user, errors.New("failed to get user")
+	}
+
+	return user, nil
+}

@@ -11,7 +11,7 @@ const (
 )
 
 type User struct {
-	ID        string    `gorm:"primaryKey"`
+	ID        uint      `gorm:"primaryKey"`
 	UID       string    `gorm:"uniqueIndex"`
 	Email     string    `gorm:"uniqueIndex;not null" json:"email"`
 	Name      string    `gorm:"not null" json:"name"`
@@ -22,5 +22,7 @@ type User struct {
 type Course struct {
 	ID        uint      `json:"id" gorm:"primaryKey"`
 	Title     string    `json:"title"`
+	User      User      `json:"user" gorm:"foreignKey:UserID"`
+	UserID    uint      `json:"user_id"`
 	CreatedAt time.Time `json:"created_at"`
 }
