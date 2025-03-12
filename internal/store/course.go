@@ -20,6 +20,14 @@ func NewCourseStore(db *gorm.DB, logger *logrus.Logger) *CourseStore {
 	}
 }
 
+func (s *CourseStore) CreateCourse(course *schema.Course) error {
+	if err := s.db.Create(course).Error; err != nil {
+		s.logger.Error("Failed to create course", err)
+		return errors.New("failed to create course")
+	}
+	return nil
+}
+
 func (s *CourseStore) ListCourses(limit, offset int) ([]schema.Course, error) {
 	var courses []schema.Course
 

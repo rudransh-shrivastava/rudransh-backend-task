@@ -19,8 +19,7 @@ type User struct {
 }
 
 type Course struct {
-	ID    uint   `json:"id" gorm:"primaryKey"`
-	Title string `json:"title"`
-	// EducatorID string    `gorm:"index;not null" json:"educator_id"`
+	ID        uint      `json:"id" gorm:"primaryKey"`
+	Title     string    `json:"title"`
 	CreatedAt time.Time `json:"created_at"`
 }
