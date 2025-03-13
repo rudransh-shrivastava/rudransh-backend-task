@@ -8,6 +8,7 @@ import (
 	firebase "firebase.google.com/go"
 	"firebase.google.com/go/auth"
 	"github.com/gorilla/mux"
+	"github.com/rudransh-shrivastava/rudransh-backend-task/internal/config"
 	"github.com/rudransh-shrivastava/rudransh-backend-task/internal/db"
 	"github.com/rudransh-shrivastava/rudransh-backend-task/internal/schema"
 	"github.com/rudransh-shrivastava/rudransh-backend-task/internal/store"
@@ -18,9 +19,9 @@ import (
 )
 
 type Server struct {
-	courseStore *store.CourseStore
-	userStore   *store.UserStore
-	quizStore   *store.QuizStore
+	courseStore store.CourseStoreInterface
+	userStore   store.UserStoreInterface
+	quizStore   store.QuizStoreInterface
 	logger      *logrus.Logger
 	db          *gorm.DB
 	authClient  *auth.Client
@@ -32,11 +33,13 @@ func NewServer() *Server {
 	if err != nil {
 		logger.Fatalf("failed to connect to database: %v", err)
 	}
-	courseStore := store.NewCourseStore(db, logger)
-	userStore := store.NewUserStore(db, logger)
-	quizStore := store.NewQuizStore(db, logger)
+	s := store.NewStore(db, logger)
+	courseStore := store.NewCourseStore(s)
+	userStore := store.NewUserStore(s)
+	quizStore := store.NewQuizStore(s)
 
-	// Initialize Firebase SDK
+	// Initialize the Firebase SDK
+	// the name key.json is used but we can also get it from the env vars if needed
 	opt := option.WithCredentialsFile("key.json")
 	fbApp, err := firebase.NewApp(context.Background(), nil, opt)
 	if err != nil {
@@ -59,9 +62,9 @@ func NewServer() *Server {
 
 func (s *Server) Run() {
 	r := mux.NewRouter()
-	r.Use(corsMiddleware)
-	r.HandleFunc("/api/v1/register", s.registerUser).Methods("POST")
+	r.Use(corsMiddleware) // Use cors middleware to prevent CORS errors
 
+	r.HandleFunc("/api/v1/register", s.registerUser).Methods("POST") // the auth endpoint
 	api := r.PathPrefix("/api/v1").Subrouter()
 
 	api.Use(s.authMiddleware)
@@ -78,7 +81,7 @@ func (s *Server) Run() {
 	s.logger.Info("Server is running on port 8080")
 	server := &http.Server{
 		Handler:      r,
-		Addr:         ":8080",
+		Addr:         config.Envs.PublicHost + ":" + config.Envs.Port,
 		WriteTimeout: 15 * time.Second,
 		ReadTimeout:  15 * time.Second,
 	}

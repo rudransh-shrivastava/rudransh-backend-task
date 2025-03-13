@@ -6,6 +6,7 @@ type CustomFormatter struct {
 	logrus.TextFormatter
 }
 
+// Format formats every log entry
 func (f *CustomFormatter) Format(entry *logrus.Entry) ([]byte, error) {
 	timestamp := entry.Time.Format("15:04:05") // Hour:Minute:Second format
 

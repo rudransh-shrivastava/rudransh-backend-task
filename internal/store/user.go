@@ -5,20 +5,20 @@ import (
 	"errors"
 
 	"github.com/rudransh-shrivastava/rudransh-backend-task/internal/schema"
-	"github.com/sirupsen/logrus"
-	"gorm.io/gorm"
 )
 
-type UserStore struct {
-	db     *gorm.DB
-	logger *logrus.Logger
+type UserStoreInterface interface {
+	CreateUser(user *schema.User) error
+	GetUserByUID(uid string) (*schema.User, error)
+	GetUserFromContext(ctx context.Context) (*schema.User, error)
 }
 
-func NewUserStore(db *gorm.DB, logger *logrus.Logger) *UserStore {
-	return &UserStore{
-		db:     db,
-		logger: logger,
-	}
+type UserStore struct {
+	*Store
+}
+
+func NewUserStore(store *Store) *UserStore {
+	return &UserStore{Store: store}
 }
 
 func (us *UserStore) CreateUser(user *schema.User) error {
@@ -29,18 +29,18 @@ func (us *UserStore) CreateUser(user *schema.User) error {
 	return nil
 }
 
-func (s *UserStore) GetUserByUID(uid string) (schema.User, error) {
+func (s *UserStore) GetUserByUID(uid string) (*schema.User, error) {
 	var user schema.User
 
 	if err := s.db.Where("uid = ?", uid).First(&user).Error; err != nil {
 		s.logger.Error("Failed to get user", err)
-		return user, errors.New("failed to get user")
+		return &user, errors.New("failed to get user")
 	}
 
-	return user, nil
+	return &user, nil
 }
 
-func (s *UserStore) GetUserFromContext(ctx context.Context) (schema.User, error) {
+func (s *UserStore) GetUserFromContext(ctx context.Context) (*schema.User, error) {
 	uid := ctx.Value("userID").(string)
 	user, err := s.GetUserByUID(uid)
 	if err != nil {

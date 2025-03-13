@@ -4,20 +4,21 @@ import (
 	"errors"
 
 	"github.com/rudransh-shrivastava/rudransh-backend-task/internal/schema"
-	"github.com/sirupsen/logrus"
-	"gorm.io/gorm"
 )
 
-type CourseStore struct {
-	db     *gorm.DB
-	logger *logrus.Logger
+type CourseStoreInterface interface {
+	ListCourses(limit, offset int) ([]schema.Course, error)
+	CreateCourse(course *schema.Course) error
+	GetCourseById(id uint) (*schema.Course, error)
+	DeleteCourse(course *schema.Course) error
 }
 
-func NewCourseStore(db *gorm.DB, logger *logrus.Logger) *CourseStore {
-	return &CourseStore{
-		db:     db,
-		logger: logger,
-	}
+type CourseStore struct {
+	*Store
+}
+
+func NewCourseStore(store *Store) *CourseStore {
+	return &CourseStore{Store: store}
 }
 
 func (s *CourseStore) CreateCourse(course *schema.Course) error {
@@ -39,23 +40,15 @@ func (s *CourseStore) ListCourses(limit, offset int) ([]schema.Course, error) {
 	return courses, nil
 }
 
-func (s *CourseStore) GetCourseById(id uint) (schema.Course, error) {
+func (s *CourseStore) GetCourseById(id uint) (*schema.Course, error) {
 	var course schema.Course
 
 	if err := s.db.Where("id = ?", id).First(&course).Error; err != nil {
 		s.logger.Error("Failed to get course", err)
-		return course, errors.New("failed to get course")
+		return &course, errors.New("failed to get course")
 	}
 
-	return course, nil
-}
-
-func (s *CourseStore) UpdateCourse(course *schema.Course) error {
-	if err := s.db.Save(course).Error; err != nil {
-		s.logger.Error("Failed to update course", err)
-		return errors.New("failed to update course")
-	}
-	return nil
+	return &course, nil
 }
 
 // shouldnt allow to delete someone else course

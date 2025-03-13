@@ -61,14 +61,14 @@ func (s *Server) createCourse(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Look up the user in your database using the UID.
+	// Look up the user in db
 	uid, _ := r.Context().Value("userID").(string)
 	user, err := s.userStore.GetUserByUID(uid)
 	if err != nil {
 		http.Error(w, "User not found", http.StatusUnauthorized)
 		return
 	}
-	course.User = user
+	course.User = *user
 
 	if err := s.courseStore.CreateCourse(&course); err != nil {
 		s.logger.Error("Failed to create course", err)

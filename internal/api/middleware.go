@@ -23,7 +23,7 @@ func (s *Server) authMiddleware(next http.Handler) http.Handler {
 			return
 		}
 
-		// Properly extract Bearer token
+		// Properly parse Bearer token
 		parts := strings.Split(idToken, " ")
 		if len(parts) != 2 || strings.ToLower(parts[0]) != "bearer" {
 			http.Error(w, "Invalid Authorization format, expected 'Bearer <token>'", http.StatusUnauthorized)
@@ -85,6 +85,7 @@ func RBACMiddleware(db *gorm.DB, allowedRoles ...schema.Role) func(http.Handler)
 	}
 }
 
+// The corsMiddleware adds the necessary headers to enable CORS
 func corsMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Access-Control-Allow-Origin", "*")
@@ -97,5 +98,14 @@ func corsMiddleware(next http.Handler) http.Handler {
 		}
 
 		next.ServeHTTP(w, r)
+	})
+}
+
+// mockAuthMiddleware is a mock auth middleware that sets a fixed user ID in the context
+// This is used for testing purposes only.
+func mockAuthMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ctx := context.WithValue(r.Context(), "userID", "mock-user-id")
+		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }

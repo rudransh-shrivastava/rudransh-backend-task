@@ -30,7 +30,7 @@ var quizPool = []Question{
 	{"Which element has the chemical symbol 'O'?", []string{"Oxygen", "Gold", "Silver", "Osmium"}, "Oxygen"},
 }
 
-// mock: returns first n questions from the quiz pool
+// mock: returns a quiz of the given size
 func generateQuiz(number int) ([]Question, error) {
 	if number > len(quizPool) || number <= 0 {
 		return nil, fmt.Errorf("invalid quiz size: must be between 1 and %d", len(quizPool))
@@ -90,7 +90,7 @@ func (s *Server) generateQuiz(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	schemaQuiz := schema.Quiz{
-		Course:    course,
+		Course:    *course,
 		Questions: string(jsonQuestions),
 	}
 	err = s.quizStore.CreateQuiz(&schemaQuiz)
@@ -143,6 +143,6 @@ func (s *Server) getQuiz(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = s.quizStore.RegisterQuizTaken(&user, &quiz)
+	err = s.quizStore.RegisterQuizTaken(user, quiz)
 	utils.WriteJSONResponse(w, quiz)
 }
