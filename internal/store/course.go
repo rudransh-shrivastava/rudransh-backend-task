@@ -11,6 +11,7 @@ type CourseStoreInterface interface {
 	CreateCourse(course *schema.Course) error
 	GetCourseById(id uint) (*schema.Course, error)
 	DeleteCourse(course *schema.Course) error
+	UpdateCourse(course *schema.Course) error
 }
 
 type CourseStore struct {
@@ -56,6 +57,14 @@ func (s *CourseStore) DeleteCourse(course *schema.Course) error {
 	if err := s.db.Delete(course).Error; err != nil {
 		s.logger.Error("Failed to delete course", err)
 		return errors.New("failed to delete course")
+	}
+	return nil
+}
+
+func (s *CourseStore) UpdateCourse(course *schema.Course) error {
+	if err := s.db.Save(course).Error; err != nil {
+		s.logger.Error("Failed to update course", err)
+		return errors.New("failed to update course")
 	}
 	return nil
 }

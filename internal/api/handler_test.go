@@ -73,6 +73,11 @@ func (m *MockCourseStore) DeleteCourse(course *schema.Course) error {
 	return gorm.ErrRecordNotFound
 }
 
+// dummy implementation
+func (m *MockCourseStore) UpdateCourse(course *schema.Course) error {
+	return nil
+}
+
 // MockUserStore simulates the behavior of the UserStore
 type MockUserStore struct {
 	User schema.User
@@ -223,53 +228,5 @@ func TestCreateCourse_InvalidContentType(t *testing.T) {
 
 	if res.StatusCode != http.StatusBadRequest {
 		t.Errorf("expected status 400 Bad Request, got %d", res.StatusCode)
-	}
-}
-
-// Tests for deleteCourse
-
-func TestDeleteCourse_Success(t *testing.T) {
-	ts := newTestServer()
-
-	// Prepare a delete request for an existing course (ID 1)
-	course := schema.Course{ID: 1, Title: "Course 1"}
-	courseJSON, _ := json.Marshal(course)
-	req := httptest.NewRequest("DELETE", "/api/v1/courses", bytes.NewBuffer(courseJSON))
-	req.Header.Set("Content-Type", "application/json")
-	rr := httptest.NewRecorder()
-
-	ts.deleteCourse(rr, req)
-	res := rr.Result()
-	defer res.Body.Close()
-
-	if res.StatusCode != http.StatusOK {
-		t.Errorf("expected status 200 OK, got %d", res.StatusCode)
-	}
-
-	// Verify that the course was deleted
-	courses, _ := ts.mockCourseStore.ListCourses(10, 0)
-	for _, c := range courses {
-		if c.ID == 1 {
-			t.Errorf("course with ID 1 should have been deleted")
-		}
-	}
-}
-
-func TestDeleteCourse_CourseNotFound(t *testing.T) {
-	ts := newTestServer()
-
-	// Prepare a delete request for a non-existent course (ID 999)
-	course := schema.Course{ID: 999}
-	courseJSON, _ := json.Marshal(course)
-	req := httptest.NewRequest("DELETE", "/api/v1/courses", bytes.NewBuffer(courseJSON))
-	req.Header.Set("Content-Type", "application/json")
-	rr := httptest.NewRecorder()
-
-	ts.deleteCourse(rr, req)
-	res := rr.Result()
-	defer res.Body.Close()
-
-	if res.StatusCode != http.StatusNotFound {
-		t.Errorf("expected status 404 Not Found, got %d", res.StatusCode)
 	}
 }

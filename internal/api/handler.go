@@ -60,7 +60,9 @@ func (s *Server) postCourse(w http.ResponseWriter, r *http.Request) {
 		utils.WriteErrorResponse(w, "title is required", http.StatusBadRequest)
 		return
 	}
-
+	if course.ID != 0 {
+		// Update the course instead of creating a new one
+	}
 	// Look up the user in db
 	uid, _ := r.Context().Value("userID").(string)
 	user, err := s.userStore.GetUserByUID(uid)
