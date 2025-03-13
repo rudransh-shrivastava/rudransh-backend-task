@@ -9,9 +9,10 @@ import (
 )
 
 type Config struct {
-	PublicHost string
-	Port       string
-	Mode       string
+	PublicHost       string
+	Port             string
+	Mode             string
+	GoogleConfigPath string
 }
 
 var Envs = initConfig()
@@ -19,9 +20,10 @@ var Envs = initConfig()
 func initConfig() Config {
 	godotenv.Load()
 	return Config{
-		PublicHost: getEnv("PUBLIC_HOST", "localhost"),
-		Port:       getEnv("PORT", "8080"),
-		Mode:       getEnv("MODE", "development"),
+		PublicHost:       getEnv("PUBLIC_HOST", "localhost"),
+		Port:             getEnv("PORT", "8080"),
+		Mode:             getEnv("MODE", "development"),
+		GoogleConfigPath: getEnv("GOOGLE_CONFIG_PATH", "key.json"),
 	}
 }
 

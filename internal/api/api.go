@@ -40,7 +40,7 @@ func NewServer() *Server {
 
 	// Initialize the Firebase SDK
 	// the name key.json is used but we can also get it from the env vars if needed
-	opt := option.WithCredentialsFile("key.json")
+	opt := option.WithCredentialsFile(config.Envs.GoogleConfigPath)
 	fbApp, err := firebase.NewApp(context.Background(), nil, opt)
 	if err != nil {
 		logger.Fatalf("error initializing firebase app: %v", err)
