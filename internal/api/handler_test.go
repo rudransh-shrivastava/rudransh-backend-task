@@ -192,7 +192,7 @@ func TestCreateCourse_Success(t *testing.T) {
 	req = req.WithContext(ctx)
 
 	rr := httptest.NewRecorder()
-	ts.createCourse(rr, req)
+	ts.postCourse(rr, req)
 	res := rr.Result()
 	defer res.Body.Close()
 
@@ -217,7 +217,7 @@ func TestCreateCourse_InvalidContentType(t *testing.T) {
 	req.Header.Set("Content-Type", "text/plain")
 	rr := httptest.NewRecorder()
 
-	ts.createCourse(rr, req)
+	ts.postCourse(rr, req)
 	res := rr.Result()
 	defer res.Body.Close()
 
